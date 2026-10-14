@@ -1,53 +1,36 @@
 # Brivo Mobile Pass for Home Assistant
 
-A custom integration that opens authorized Brivo Mobile Pass gates and doors directly from Home Assistant. No separate server, bridge service, MQTT broker, or phone app is needed for each unlock. Requires Home Assistant 2026.10 or newer and internet access to Brivo.
+Open Brivo Mobile Pass gates and doors from Home Assistant. The integration adds an **Open** button for each enabled access point on your pass.
 
-This is an independent community integration. It uses the Mobile Pass cloud endpoints observed in the Android app, which may change. It is not the Brivo administrator Open API integration. Bluetooth, NFC, PIN entry, location spoofing, physical gate state, and Google/Firebase sign-in are outside its scope.
+Requires Home Assistant 2026.10 or later, internet access, and a valid Brivo Mobile Pass.
 
-## What it does
+## Install
 
-- Discovers the Mobile Pass credential, sites, and enabled access points.
-- Creates a native **Open** button for each discovered access point.
-- Uses Bearer authentication and refreshes access tokens on demand.
-- Saves rotated refresh tokens before sending an unlock.
-- Supports existing refresh tokens or one-time invitation setup through the UI.
-- Supports multiple passes, removal, reauthentication, and redacted diagnostics.
-- Offers `brivo_mobile_pass.check_connection`, which verifies authentication without opening anything.
+### HACS
 
-Buttons represent commands. A successful request means Brivo accepted the command; there is no sensor confirming that a gate moved. There is no background polling. Discovery occurs during setup; newly granted access points can be rediscovered by reauthenticating. You can disable unwanted entities in Home Assistant's entity settings.
-
-## Installation
-
-### HACS custom repository
-
-After this repository is published:
-
-1. Open HACS → Custom repositories.
-2. Add `https://github.com/ColeMundus/ha-brivo-mobile-pass`, category **Integration**.
+1. In HACS, open **Custom repositories**.
+2. Add `https://github.com/ColeMundus/ha-brivo-mobile-pass` with the category **Integration**.
 3. Download **Brivo Mobile Pass** and restart Home Assistant.
-4. Go to Settings → Devices & services → Add integration → **Brivo Mobile Pass**.
+4. Open **Settings → Devices & services → Add integration** and select **Brivo Mobile Pass**.
 
-HACS custom-repository installation is separate from inclusion in the default HACS catalog. See [publishing](docs/PUBLISHING.md).
+### Manual installation
 
-### Manual
+Copy `custom_components/brivo_mobile_pass` into Home Assistant's `custom_components` directory, restart Home Assistant, and add the integration through **Devices & services**.
 
-Copy `custom_components/brivo_mobile_pass` into your HA configuration's `custom_components` directory, restart HA, and add the integration through Devices & services.
+## Set up
 
-## Credentials and setup
+You need an OAuth client ID and client secret for Brivo Mobile Pass, plus one of the following:
 
-You need matching **OAuth client ID and client secret** for the Mobile Pass endpoints, plus either an existing Mobile Pass refresh token or a fresh invitation code and its email address. These values are not shipped in this repository. The OAuth application credentials alone do not grant access; a user Mobile Pass is still required. An administrator Open API key is not automatically interchangeable with Mobile Pass application credentials.
+- An existing Mobile Pass refresh token.
+- An unused invitation code and the email address it was sent to.
 
-Use application credentials obtained through an authorized source. An existing refresh token must be exported from an account/session you control; this integration does not extract a phone's private storage. New installations can use an invitation supplied by the property/access administrator, provided they also have matching application credentials. There is currently no browser OAuth login or automatic public client-credential provisioning. This prerequisite limits plug-and-play setup for other users.
+Enter these details in the setup form. Invitation codes can only be used once. If setup fails after activation, submit the same details to continue with the saved credentials.
 
-Choose **Use an existing refresh token** when migrating an authenticated client. Choose **Redeem a new invitation once** for a new pass. Never paste credentials into issues, screenshots, or GitHub.
+Home Assistant saves the credentials and refreshes access tokens automatically. Protect your Home Assistant configuration and backups, which contain these credentials.
 
-Invitation submission is explicit and is never automatically retried. HA records the attempt before redemption and saves returned tokens before discovery. If discovery fails or you cancel, submitting the same setup values recovers saved tokens. If the redemption failed with no saved tokens, the same attempt is blocked because its result could be uncertain; use a saved refresh token or obtain another invitation. A process/network failure between server redemption and receiving/saving the response cannot be made transactional with Brivo.
+## Use
 
-Tokens and setup recovery records live in HA's private `.storage` directory. They are not encrypted independently of HA's storage. Protect your HA configuration and backups. A pending/cancelled setup may leave a recovery record; successful setup removes its record. Deleting an installed integration removes its live token store. Invitations are stored only as hashed attempt identifiers, not plaintext codes.
-
-## Use in automations
-
-Use the actual button entity ID shown in HA:
+Press an access point's **Open** button to send an unlock request. You can add these buttons to a dashboard or use them in scripts and automations.
 
 ```yaml
 actions:
@@ -56,34 +39,20 @@ actions:
       entity_id: button.example_gate_open
 ```
 
-Read-only connection check:
+Replace `button.example_gate_open` with the entity ID shown in Home Assistant.
 
-```yaml
-actions:
-  - action: brivo_mobile_pass.check_connection
-```
+Buttons send commands; they do not report whether a gate is physically open or closed. Disable any buttons you don't want through Home Assistant's entity settings.
 
-With multiple passes, provide `config_entry_id` using the action's integration selector. Your own arrival detection and repeat interval belong in normal HA automations; the integration does not start repeated unlocks itself.
+To check the connection without opening a gate, run `brivo_mobile_pass.check_connection`. If you have multiple passes, select the integration in the action's **Integration** field.
 
 ## Troubleshooting
 
-- **Expired/revoked credentials:** HA requests reauthentication. Supply an authorized refresh token or a fresh invitation. Existing entity IDs remain stable across reauthentication for the same access-point IDs.
-- **HTTP 403:** Brivo refused the operation. Confirm that your pass permits remote activation. A gate may require proximity, two-factor, or other policy checks that this integration does not implement.
-- **Network failure:** The command is not automatically retried, because Brivo may already have received it. Check the physical gate before retrying manually.
-- **Missing access point:** Only discovered, enabled access points are exposed. Reauthenticate to rediscover changed permissions.
-- **Cannot save credentials:** No unlock is sent until the refreshed token is saved. Check HA storage capacity and permissions.
+- **Expired or revoked pass:** Follow Home Assistant's reauthentication prompt with a valid refresh token or new invitation.
+- **HTTP 403:** Check that your pass allows remote activation. Brivo may require proximity or other checks for that access point.
+- **Connection failure:** Check your internet connection. Before retrying, check whether the gate opened; Brivo may have received the first request.
+- **Missing gate or door:** Reauthenticate to discover changes to your pass's access points.
+- **Credentials could not be saved:** Check Home Assistant's disk space and storage permissions.
 
-The unlock body currently supplies an empty Wi-Fi proximity list. This works at the tested site; sites requiring real proximity evidence may reject it. A live test at one site confirmed server acceptance of a left-gate command; physical movement was not independently observed. Broader hardware/site compatibility needs community testing.
+## Contributing
 
-## Development
-
-```sh
-uv sync --group dev
-uv run ruff check .
-uv run ruff format --check .
-uv run pytest
-```
-
-Tests use fabricated credentials and HA's real integration test harness. CI runs tests, Ruff, Hassfest, and HACS validation. The API client is kept in a separate module without HA imports; there is no extra runtime package to publish or install. The manifest uses `cloud_polling` because HA has no cloud-command-only IoT class; the implementation does not poll.
-
-See [architecture and API](docs/ARCHITECTURE.md), [publishing](docs/PUBLISHING.md), and [security](SECURITY.md). No Home Assistant quality-scale certification is claimed.
+See [development and API details](docs/ARCHITECTURE.md) and [release instructions](docs/PUBLISHING.md). Report bugs through [GitHub Issues](https://github.com/ColeMundus/ha-brivo-mobile-pass/issues). Keep credentials out of reports; see [SECURITY.md](SECURITY.md).

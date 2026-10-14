@@ -1,9 +1,9 @@
-# Credentials and security
+# Security
 
-Do not report issues containing invitations, client secrets, tokens, email addresses, pass/device/site IDs, locations, HA `.storage`, or complete HA backups. Diagnostics are deliberately limited to counts and booleans. Example/test values are fabricated.
+Keep client secrets, invitations, and tokens out of issues, screenshots, and commits. Home Assistant's configuration and backups contain credentials and should be kept private.
 
-Real credentials belong in Home Assistant's local storage, never in this repository. Gitignore is a second line of defense; review tracked files before pushing. Home Assistant configuration and backups contain usable credentials and must be protected. Deleting an integration removes its live token store but does not revoke a credential at Brivo. Cancelled/failed setup can retain a recovery record in `.storage/brivo_mobile_pass.setup.*`; remove it locally only when recovery is no longer needed.
+Diagnostic downloads omit credentials and identifying information. Use them when reporting a bug.
 
-This integration makes commands to physical access-control devices using the user's granted pass. It does not bypass Brivo permission checks or report physical open/closed state. A successful response establishes server acceptance only.
+Deleting the integration removes its token store. Failed or cancelled setup may leave a recovery record in `.storage/brivo_mobile_pass.setup.*`; remove it once it is no longer needed. Revoking a pass must be done through Brivo.
 
-Report security problems privately using GitHub's private vulnerability reporting when enabled by the maintainer. Do not include secrets in public issues.
+Report security vulnerabilities through [GitHub's private vulnerability reporting](https://github.com/ColeMundus/ha-brivo-mobile-pass/security/advisories/new).

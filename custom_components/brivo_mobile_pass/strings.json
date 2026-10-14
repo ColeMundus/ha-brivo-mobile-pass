@@ -5,13 +5,13 @@
       "user": {
         "title": "Connect Brivo Mobile Pass",
         "menu_options": {
-          "token": "Use an existing refresh token",
-          "invitation": "Redeem a new invitation once"
+          "token": "Existing pass",
+          "invitation": "New invitation"
         }
       },
       "token": {
         "title": "Existing Mobile Pass",
-        "description": "Provide your matching OAuth application credentials and an existing Mobile Pass refresh token. Credentials stay on this Home Assistant server.",
+        "description": "Enter your Brivo Mobile Pass OAuth client ID, client secret, and refresh token.",
         "data": {
           "client_id": "OAuth client ID",
           "client_secret": "OAuth client secret",
@@ -20,7 +20,7 @@
       },
       "invitation": {
         "title": "New Mobile Pass invitation",
-        "description": "Submitting redeems this invitation once. An invitation used by your phone cannot be reused. Tokens are saved before discovery; resubmitting the same values recovers a completed redemption.",
+        "description": "Enter your OAuth client ID and secret, and an unused invitation code with its email address. Submitting this form activates the pass and uses the invitation.",
         "data": {
           "client_id": "OAuth client ID",
           "client_secret": "OAuth client secret",
@@ -30,14 +30,14 @@
       }
     },
     "error": {
-      "invalid_auth": "Brivo rejected these credentials or invitation. Verify the application credentials and authorization.",
-      "cannot_connect": "Could not complete setup. Saved credentials can be recovered by submitting the same values."
+      "invalid_auth": "Brivo rejected the credentials. Check your client ID, client secret, and token or invitation.",
+      "cannot_connect": "Setup could not finish. Check your connection, then submit the same details to try again."
     },
     "abort": {
       "already_configured": "This Mobile Pass is already configured.",
-      "invalid_import": "The private import is incomplete.",
-      "invitation_uncertain": "This invitation was already attempted without saved tokens. It will not be retried. Use a saved refresh token or obtain a fresh invitation.",
-      "reauth_successful": "Reauthentication completed."
+      "invalid_import": "The imported credentials are incomplete.",
+      "invitation_uncertain": "This invitation was attempted, but no tokens were saved. Use an existing refresh token or request a new invitation.",
+      "reauth_successful": "Your pass has been updated."
     }
   },
   "entity": {
@@ -50,11 +50,11 @@
   "services": {
     "check_connection": {
       "name": "Check connection",
-      "description": "Validate saved credentials and refresh tokens if necessary. Does not open any access point.",
+      "description": "Check that Brivo accepts your credentials without opening a gate or door.",
       "fields": {
         "config_entry_id": {
           "name": "Integration",
-          "description": "Select an integration when multiple passes are configured."
+          "description": "Choose a pass if you have more than one."
         }
       }
     }
