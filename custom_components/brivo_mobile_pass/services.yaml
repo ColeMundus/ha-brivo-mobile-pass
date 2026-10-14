@@ -1,0 +1,7 @@
+check_connection:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: brivo_mobile_pass
