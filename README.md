@@ -19,12 +19,14 @@ Copy `custom_components/brivo_mobile_pass` into Home Assistant's `custom_compone
 
 ## Set up
 
-You need an OAuth client ID and client secret for Brivo Mobile Pass, plus one of the following:
+Setup needs two types of credentials:
 
-- An existing Mobile Pass refresh token.
-- An unused invitation code and the email address it was sent to.
+1. **Brivo app credentials:** the OAuth client ID and client secret used by the Mobile Pass application. These identify the app and do not grant access to your gates or doors on their own.
+2. **Your pass authorization:** either an existing Mobile Pass refresh token, or an unused invitation code and the email address it was sent to. This authorizes access through your pass.
 
-Enter these details in the setup form. Invitation codes can only be used once. If setup fails after activation, submit the same details to continue with the saved credentials.
+The app credentials must match the application that issued your refresh token. You do not need to register an OAuth application for this integration.
+
+Enter both types in the setup form. Invitation codes can only be used once. If setup fails after activation, submit the same details to continue with the saved credentials.
 
 Home Assistant saves the credentials and refreshes access tokens automatically. Protect your Home Assistant configuration and backups, which contain these credentials.
 
