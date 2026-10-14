@@ -23,6 +23,7 @@ public class Constants {
         static {
             regions[RegionSelectionState.FIREBASE_EUROPE.ordinal()] = 1;
             regions[RegionSelectionState.FIREBASE_UNITED_STATES.ordinal()] = 2;
+            $EnumSwitchMapping$1 = regions;
         }
     }
     public final String getClientId(RegionSelectionState region) {
@@ -60,6 +61,7 @@ def test_selects_us_production_not_first_or_debug_values():
         SOURCE.replace('areEqual("release-fixture"', 'areEqual("different-build"'),
         SOURCE.replace("getClientSecret", "renamedSecret"),
         SOURCE.replace("if (branch == 1)", "if (branch == 2)"),
+        SOURCE.replace("WhenMappings.$EnumSwitchMapping$1", "WhenMappings.$EnumSwitchMapping$0"),
     ],
 )
 def test_changed_or_unknown_layout_is_rejected(source):

@@ -54,7 +54,9 @@ def method_body(source: str, name: str) -> str:
     return source[opening + 1 : block_end(code, opening) - 1]
 
 
-def production_value(source: str, name: str, us_region: int, release_type: str) -> str:
+def production_value(
+    source: str, name: str, us_region: int, region_map: str, release_type: str
+) -> str:
     body = method_body(source, name)
     code = masked(body)
     # The verified layout excludes all other regions before the production branch.
@@ -64,6 +66,15 @@ def production_value(source: str, name: str, us_region: int, release_type: str) 
             "Could not identify the US region branch. Use the manual lookup guide."
         )
     guard = guards[0]
+    assignment = (
+        r"\bint\s+"
+        + re.escape(guard.group(1))
+        + r"\s*=\s*WhenMappings\."
+        + re.escape(region_map)
+        + r"\s*\[\s*\w+\.ordinal\(\)\s*\]\s*;"
+    )
+    if not re.search(assignment, code[: guard.start()]):
+        raise ExtractionError("The credential branch does not use the US region map.")
     guard_end = block_end(code, guard.end() - 1)
     if re.search(
         r"\b" + re.escape(guard.group(1)) + r"\s*==\s*" + str(us_region) + r"\b",
@@ -97,10 +108,15 @@ def production_value(source: str, name: str, us_region: int, release_type: str) 
 def extract_from_source(source: str) -> dict[str, str]:
     code = masked(source)
     regions = re.findall(
-        r"\[\s*RegionSelectionState\.FIREBASE_UNITED_STATES\.ordinal\(\)\s*\]\s*=\s*(\d+)\s*;", code
+        r"(\w+)\[\s*RegionSelectionState\.FIREBASE_UNITED_STATES\.ordinal\(\)\s*\]\s*=\s*(\d+)\s*;",
+        code,
     )
     if len(regions) != 1:
         raise ExtractionError("Could not identify the US region. Use the manual lookup guide.")
+    array_name, us_region = regions[0]
+    maps = re.findall(r"(\$EnumSwitchMapping\$\d+)\s*=\s*" + re.escape(array_name) + r"\s*;", code)
+    if len(maps) != 1:
+        raise ExtractionError("Could not identify the region map. Use the manual lookup guide.")
     releases = [
         m
         for m in re.finditer(r"\bRELEASE_PROD\s*\(\s*(" + JAVA_STRING + r")\s*\)", source)
@@ -115,8 +131,10 @@ def extract_from_source(source: str) -> dict[str, str]:
     except ValueError:
         raise ExtractionError("Unsupported production build value.") from None
     return {
-        "client_id": production_value(source, "getClientId", int(regions[0]), release_type),
-        "client_secret": production_value(source, "getClientSecret", int(regions[0]), release_type),
+        "client_id": production_value(source, "getClientId", int(us_region), maps[0], release_type),
+        "client_secret": production_value(
+            source, "getClientSecret", int(us_region), maps[0], release_type
+        ),
     }
 
 
