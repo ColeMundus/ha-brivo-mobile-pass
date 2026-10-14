@@ -1,4 +1,12 @@
+<img src="custom_components/brivo_mobile_pass/brand/icon.png" alt="Brivo Mobile Pass" width="80">
+
 # Brivo Mobile Pass for Home Assistant
+
+[![Checks](https://github.com/ColeMundus/ha-brivo-mobile-pass/actions/workflows/validate.yml/badge.svg?branch=main)](https://github.com/ColeMundus/ha-brivo-mobile-pass/actions/workflows/validate.yml)
+[![HACS](https://img.shields.io/badge/HACS-custom%20repository-41BDF5?logo=homeassistant&logoColor=white)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ColeMundus&repository=ha-brivo-mobile-pass&category=integration)
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2026.10%2B-41BDF5?logo=homeassistant&logoColor=white)](https://github.com/ColeMundus/ha-brivo-mobile-pass/blob/main/custom_components/brivo_mobile_pass/manifest.json)
+[![Release](https://img.shields.io/github/v/release/ColeMundus/ha-brivo-mobile-pass)](https://github.com/ColeMundus/ha-brivo-mobile-pass/releases/latest)
+[![License](https://img.shields.io/github/license/ColeMundus/ha-brivo-mobile-pass)](LICENSE)
 
 Open Brivo Mobile Pass gates and doors from Home Assistant. The integration adds an **Open** button for each enabled access point on your pass.
 
@@ -7,6 +15,8 @@ Requires Home Assistant 2026.10 or later, internet access, and a valid Brivo Mob
 ## Install
 
 ### HACS
+
+Use [Open in HACS](https://my.home-assistant.io/redirect/hacs_repository/?owner=ColeMundus&repository=ha-brivo-mobile-pass&category=integration), or add it manually:
 
 1. In HACS, open **Custom repositories**.
 2. Add `https://github.com/ColeMundus/ha-brivo-mobile-pass` with the category **Integration**.
@@ -24,7 +34,7 @@ Setup needs two types of credentials:
 1. **Brivo app credentials:** the OAuth client ID and client secret used by the Mobile Pass application. These identify the app and do not grant access to your gates or doors on their own.
 2. **Your pass authorization:** either an existing Mobile Pass refresh token, or an unused invitation code and the email address it was sent to. This authorizes access through your pass.
 
-The app credentials must match the application that issued your refresh token. You do not need to register an OAuth application for this integration. See [how to find the app credentials](docs/APP_CREDENTIALS.md) in your own copy of the Android app.
+The app credentials must match the application that issued your refresh token. You do not need to register an OAuth application for this integration. Use the [APK extraction helper](docs/APP_CREDENTIALS.md) to find the app credentials in a downloaded APK.
 
 Enter both types in the setup form. Invitation codes can only be used once. If setup fails after activation, submit the same details to continue with the saved credentials.
 

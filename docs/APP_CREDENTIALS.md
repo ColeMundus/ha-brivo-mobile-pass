@@ -1,62 +1,58 @@
-# Find the Brivo app credentials
+# Get the app credentials
 
-The OAuth client ID and client secret are included in the Brivo Mobile Pass Android app. They identify the application. Your invitation or refresh token supplies the authorization for your pass.
+Download the Brivo Mobile Pass APK and run the extraction helper on your computer. It finds the US production client ID and secret for you.
 
-You can read the app credentials from your own copy of the APK with [JADX](https://github.com/skylot/jadx). Extract them before submitting an invitation in Home Assistant. This process reads the APK and does not activate a pass.
+## 1. Download the APK
 
-The class and method names below were verified in Mobile Pass 4.33.2. Other versions may rename or reorganize them. This integration currently uses Brivo's US endpoints.
+Choose a plain **APK** for `com.brivo.pass` from one of these mirrors:
 
-## 1. Get the APK
+- [APKMirror — available versions](https://www.apkmirror.com/apk/brivo-systems-llc/brivo-mobile-pass/)
+- [APKPure — download page](https://apkpure.net/brivo-mobile-pass/com.brivo.pass/download)
+- [APKCombo — download page](https://apkcombo.com/brivo-mobile-pass/com.brivo.pass/)
 
-If you already have the APK, continue to step 2.
+Choose the newest version listed. Mirrors can have different versions available. APKM and XAPK bundles are not supported by the helper.
 
-Otherwise, install the official app on your Android phone. Install Google's [Android Platform Tools](https://developer.android.com/tools/releases/platform-tools), enable USB debugging on the phone, and connect it to your computer.
+You only need the downloaded file. You do not need to install the app or connect a phone.
 
-In a macOS or Linux terminal:
+## 2. Run the helper
 
-```sh
-umask 077
-mkdir brivo-client.private
-cd brivo-client.private
-adb devices
-adb -s DEVICE_SERIAL shell pm path com.brivo.pass
-```
-
-Replace `DEVICE_SERIAL` with your phone's serial from `adb devices`. Find the output line ending in `base.apk`, remove its `package:` prefix, and use that path to copy the APK:
+The helper needs Python 3.10 or later and [JADX](https://github.com/skylot/jadx). On macOS, install both with Homebrew:
 
 ```sh
-adb -s DEVICE_SERIAL pull "/path/returned/by/pm/base.apk" brivo-pass.apk
+brew install python jadx
 ```
 
-Keep the APK and extracted source outside the integration repository.
+On Linux, install Python 3 and JADX using your distribution's packages or the [JADX releases](https://github.com/skylot/jadx/releases).
 
-## 2. Open it in JADX
-
-Download JADX from its [releases page](https://github.com/skylot/jadx/releases) and follow its installation instructions. On macOS, you can also install it with Homebrew:
+[Download the helper](https://github.com/ColeMundus/ha-brivo-mobile-pass/releases/latest/download/extract_app_credentials.py) into the same folder as your APK. Open a terminal in that folder and run:
 
 ```sh
-brew install jadx
-jadx-gui brivo-pass.apk
+python3 extract_app_credentials.py "Brivo Mobile Pass.apk"
 ```
 
-Use JADX's text search to find `getClientId` and `getClientSecret`. In version 4.33.2, both methods are in:
+Replace the filename with the APK you downloaded. If you cloned this repository, run `python3 scripts/extract_app_credentials.py "/path/to/app.apk"` instead.
 
-```text
-com.brivo.pass.Constants
+The helper saves `brivo-app-credentials.private.json`. Open it and copy `client_id` and `client_secret` into Home Assistant's setup form. The helper reads the APK locally and does not activate an invitation or contact Brivo.
+
+If JADX is not on your PATH, pass its executable location:
+
+```sh
+python3 extract_app_credentials.py "app.apk" --jadx "/path/to/jadx/bin/jadx"
 ```
 
-## 3. Select the matching pair
+To save another copy, add `--output another-credentials.private.json`. Existing files are never overwritten.
 
-For a new invitation, read the production-US branches of `getClientId` and `getClientSecret`:
+## Compatibility
 
-- Region: `FIREBASE_UNITED_STATES`.
-- Build: `RELEASE_PROD`.
+The helper was tested with Mobile Pass 4.33.2. It checks the US region and production build branches before saving the values. If a different app version changes that layout, it stops and points you to the manual method below.
 
-The decompiler may represent regions as numbers. Check the `WhenMappings` class to resolve them. In version 4.33.2, the region switch maps `FIREBASE_UNITED_STATES` to `2`.
+For an existing refresh token, the app credentials must match the client that issued it. The helper extracts the regular US production pair; other clients need manual lookup.
 
-Copy the returned client ID and secret into Home Assistant's **Brivo app client ID** and **Brivo app client secret** fields. If a method returns another field or constructs a value, follow that assignment to its final string.
+## Manual lookup
 
-For an existing refresh token, the pair must match its `client_id` claim. You can read that claim locally without sending the token anywhere:
+Open the APK in `jadx-gui`. Search for `getClientId` and `getClientSecret` in `com.brivo.pass.Constants`. Read the `FIREBASE_UNITED_STATES` region and `RELEASE_PROD` build branches. If the decompiler uses numbered regions, check `WhenMappings`; version 4.33.2 maps the US region to `2`.
+
+For an existing token, read its `client_id` locally and find the matching app constant. Do not submit the token to an online decoder:
 
 ```sh
 python3 - <<'PY'
@@ -70,22 +66,8 @@ print("Client ID:", payload["client_id"])
 PY
 ```
 
-Match that client ID to the app's constants. If it matches `SH_CLIENT_ID`, use the corresponding `SH_CLIENT_SECRET`. The app's selection logic is in:
+If it matches `SH_CLIENT_ID`, use `SH_CLIENT_SECRET`. The app's selection logic is in `RefreshOnairAccessTokenUseCase`.
 
-```text
-com.brivo.pass.features.accesspoints.domain.usecases.RefreshOnairAccessTokenUseCase
-```
+If those names have changed, search for `BrivoConfiguration.Builder` and follow the client ID and secret passed into it.
 
-Paste the client ID and secret as separate strings. The integration builds the HTTP authentication header itself.
-
-## If the names have changed
-
-Search for `BrivoConfiguration.Builder`, `refreshAccessToken`, or `oauth/token` and follow the client ID and secret used for those requests. In version 4.33.2, `BrivoSDKWrapper` passes them into `BrivoConfiguration.Builder`.
-
-JADX may fail to decompile some methods. Its text search and recovered source can still help locate the credentials. See the [JADX troubleshooting guide](https://github.com/skylot/jadx/wiki/Troubleshooting-Q%26A) if the relevant code is unreadable.
-
-## Keep the values local
-
-Do not upload the APK, decompiled source, client secret, or personal tokens to the repository or an issue. The repository ignores `.private` directories and private files as a precaution.
-
-Brivo can change its client credentials or API. Extracting the values locally does not guarantee that they will remain valid.
+Keep the APK, extracted source, and credential file out of commits and issue reports.
