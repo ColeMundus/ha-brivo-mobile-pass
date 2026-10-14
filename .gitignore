@@ -19,3 +19,4 @@ config/
 *.apk
 *.key
 *.pem
+*.private/

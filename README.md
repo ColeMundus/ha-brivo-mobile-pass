@@ -24,7 +24,7 @@ Setup needs two types of credentials:
 1. **Brivo app credentials:** the OAuth client ID and client secret used by the Mobile Pass application. These identify the app and do not grant access to your gates or doors on their own.
 2. **Your pass authorization:** either an existing Mobile Pass refresh token, or an unused invitation code and the email address it was sent to. This authorizes access through your pass.
 
-The app credentials must match the application that issued your refresh token. You do not need to register an OAuth application for this integration.
+The app credentials must match the application that issued your refresh token. You do not need to register an OAuth application for this integration. See [how to find the app credentials](docs/APP_CREDENTIALS.md) in your own copy of the Android app.
 
 Enter both types in the setup form. Invitation codes can only be used once. If setup fails after activation, submit the same details to continue with the saved credentials.
 
