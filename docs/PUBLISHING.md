@@ -1,31 +1,18 @@
-# Releases and HACS listing
+# Releases
 
-## Publish a release
+The integration is included in the default HACS catalog. No custom-repository registration or APK helper is needed.
 
-1. Update the version in `manifest.json` and `pyproject.toml`, then run `uv lock`.
-2. Run the checks in [Development](ARCHITECTURE.md).
-3. Push the changes and wait for all GitHub Actions jobs to pass.
-4. Test installation through HACS as a custom repository.
-5. Create a GitHub release with the matching version. Attach the standalone APK helper so users can download it directly.
+1. Update the version in `custom_components/brivo_mobile_pass/manifest.json` and `pyproject.toml`, update `CHANGELOG.md`, then run `uv lock`.
+2. Run `uv run ruff check .`, `uv run ruff format --check .`, and `uv run pytest`.
+3. Review the diff for personal authorization data. Only the explicitly bundled shared app identity belongs in source control; never publish tokens, invitations, pass credentials, APKs, or Home Assistant storage files.
+4. Push and wait for the tests, Hassfest, and HACS validation jobs to pass.
+5. Publish a GitHub release at the verified commit with the matching version. HACS installs the integration directory from the repository; no separate helper or APK assets are required.
+6. Verify the release tag and an installation/update through HACS before claiming live installation has been tested.
 
-For example:
+Example:
 
 ```sh
-gh release create v0.1.1 scripts/extract_app_credentials.py --title '0.1.1' --notes-file release-notes.md
+gh release create v0.2.0 --target <verified-commit> --title '0.2.0' --notes-file release-notes.md
 ```
 
-## Submit to the default HACS catalog
-
-The repository already includes the integration manifest, `hacs.json`, README, license, local brand icon, and HACS/Hassfest validation. GitHub issues and repository topics are enabled.
-
-After publishing a release:
-
-1. Fork [hacs/default](https://github.com/hacs/default) under your personal GitHub account.
-2. Create a new branch from its `master` branch.
-3. Add `"ColeMundus/ha-brivo-mobile-pass"` to the `integration` JSON list in alphabetical order. Keep the repository name's exact spelling.
-4. Open a pull request to `hacs/default` and allow maintainers to edit the branch.
-5. Wait for the submission checks and maintainer review. Address any requested changes.
-
-After the pull request is merged, HACS adds the repository during its next catalog scan. Until then, users can install it through Custom repositories.
-
-See the [HACS submission requirements](https://hacs.dev/docs/publish/include/) for the current rules. HACS validation passing on this repository does not mean the catalog submission has been approved.
+Do not replace saved app credentials in existing config entries when updating the bundled profile. Refresh tokens remain bound to the client that issued them.

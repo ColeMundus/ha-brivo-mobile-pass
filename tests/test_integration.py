@@ -41,6 +41,8 @@ async def setup(hass):
 async def test_setup_button_storage_unload(hass):
     entry = await setup(hass)
     assert entry.state is ConfigEntryState.LOADED
+    assert entry.data["application"] == DATA["application"]
+    assert entry.runtime_data.client.application == DATA["application"]
     assert "tokens" not in entry.data
     stored = await Store(hass, 1, f"{DOMAIN}.{entry.entry_id}.tokens").async_load()
     assert stored["tokens"]["refresh_token"] == "test-refresh"
@@ -103,7 +105,7 @@ async def test_button_failure_surfaces_and_starts_reauth(hass):
 async def test_user_menu_and_invalid_import(hass):
     result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
     assert result["type"] is FlowResultType.MENU
-    assert result["menu_options"] == ["token", "invitation"]
+    assert result["menu_options"] == ["invitation", "token", "advanced"]
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": "import"}, data={}
     )
@@ -132,8 +134,6 @@ async def test_invitation_saved_once_even_if_discovery_fails(hass):
         result["flow_id"], {"next_step_id": "invitation"}
     )
     user = {
-        "client_id": "test-client",
-        "client_secret": "test-secret",
         "email": "example@example.invalid",
         "invitation_code": "test-code",
     }
@@ -177,8 +177,6 @@ async def test_uncertain_invitation_is_not_redeemed_twice(hass):
         result["flow_id"], {"next_step_id": "invitation"}
     )
     user = {
-        "client_id": "test-client",
-        "client_secret": "test-secret",
         "email": "example@example.invalid",
         "invitation_code": "test-code",
     }
@@ -198,7 +196,10 @@ async def test_reauth_replaces_tokens_and_updates_entry(hass):
         DOMAIN, context={"source": "reauth", "entry_id": entry.entry_id}, data=entry.data
     )
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"next_step_id": "token"}
+        result["flow_id"], {"next_step_id": "advanced"}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"next_step_id": "manual_token"}
     )
 
     async def discover(client):

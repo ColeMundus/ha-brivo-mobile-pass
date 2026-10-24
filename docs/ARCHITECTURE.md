@@ -3,7 +3,8 @@
 ## Structure
 
 - `api.py`: Brivo HTTP requests, discovery, and token refresh.
-- `config_flow.py`: Setup and reauthentication.
+- `config_flow.py`: Simplified invitation/token setup, advanced manual credentials, and reauthentication.
+- `app_credentials.py`: Pinned shared US production application identity and source APK provenance; never personal tokens.
 - `button.py`: One Open button per access point.
 - `__init__.py`: Integration setup, token storage, and the connection-check action.
 - `diagnostics.py`: Credential-free diagnostic information.
@@ -11,6 +12,14 @@
 The integration uses Home Assistant's shared aiohttp session. Requests for each pass run one at a time to prevent concurrent token refreshes. Tokens are saved before an unlock request is sent. All requests run on demand.
 
 Application credentials and discovered access points are stored in the config entry. Tokens are stored separately through Home Assistant's `Store` helper with owner-only file permissions. Setup saves credentials as soon as they are received, so a failed discovery step can resume without redeeming an invitation again.
+
+## Application identity
+
+New standard setups copy the bundled Mobile Pass 4.33.2 US production client identity into the config entry. Upgrades do not replace stored app credentials. Standard reauthentication reuses the entry's identity. Advanced setup accepts explicit client credentials for compatible clients using the same US endpoints.
+
+The token's locally decoded `client_id`, when available, is only a mismatch hint. Brivo still validates authorization; decoding a JWT does not verify its signature. No token is sent to an online decoder.
+
+Do not automatically replace client profiles on refresh failures: refresh tokens are bound to their issuing client. Credentials and one-shot invitation recovery must remain paired. The integration does not download APKs, run decompilers, or contact a credential-hosting service.
 
 ## API
 

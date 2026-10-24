@@ -1,27 +1,24 @@
-<img src="custom_components/brivo_mobile_pass/brand/icon.png" alt="Brivo Mobile Pass" width="80">
+<img src="https://raw.githubusercontent.com/ColeMundus/ha-brivo-mobile-pass/main/custom_components/brivo_mobile_pass/brand/icon.png" alt="Brivo Mobile Pass" width="80">
 
 # Brivo Mobile Pass for Home Assistant
 
 [![Checks](https://github.com/ColeMundus/ha-brivo-mobile-pass/actions/workflows/validate.yml/badge.svg?branch=main)](https://github.com/ColeMundus/ha-brivo-mobile-pass/actions/workflows/validate.yml)
-[![HACS](https://img.shields.io/badge/HACS-custom%20repository-41BDF5?logo=homeassistant&logoColor=white)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ColeMundus&repository=ha-brivo-mobile-pass&category=integration)
+[![HACS](https://img.shields.io/badge/HACS-default-41BDF5?logo=homeassistant&logoColor=white)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ColeMundus&repository=ha-brivo-mobile-pass&category=integration)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2026.10%2B-41BDF5?logo=homeassistant&logoColor=white)](https://github.com/ColeMundus/ha-brivo-mobile-pass/blob/main/custom_components/brivo_mobile_pass/manifest.json)
 [![Release](https://img.shields.io/github/v/release/ColeMundus/ha-brivo-mobile-pass)](https://github.com/ColeMundus/ha-brivo-mobile-pass/releases/latest)
-[![License](https://img.shields.io/github/license/ColeMundus/ha-brivo-mobile-pass)](LICENSE)
+[MIT license](https://github.com/ColeMundus/ha-brivo-mobile-pass/blob/main/LICENSE)
 
 Open Brivo Mobile Pass gates and doors from Home Assistant. The integration adds an **Open** button for each enabled access point on your pass.
 
-Requires Home Assistant 2026.10 or later, internet access, and a valid Brivo Mobile Pass.
+Requires **Home Assistant 2026.10 or later**, internet access, and a valid Brivo Mobile Pass. Built-in setup uses the US production Mobile Pass client. No APK download, extraction tools, or developer account is needed.
 
 ## Install
 
 ### HACS
 
-Use [Open in HACS](https://my.home-assistant.io/redirect/hacs_repository/?owner=ColeMundus&repository=ha-brivo-mobile-pass&category=integration), or add it manually:
-
-1. In HACS, open **Custom repositories**.
-2. Add `https://github.com/ColeMundus/ha-brivo-mobile-pass` with the category **Integration**.
-3. Download **Brivo Mobile Pass** and restart Home Assistant.
-4. Open **Settings → Devices & services → Add integration** and select **Brivo Mobile Pass**.
+1. [Open in HACS](https://my.home-assistant.io/redirect/hacs_repository/?owner=ColeMundus&repository=ha-brivo-mobile-pass&category=integration), or search HACS for **Brivo Mobile Pass**.
+2. Download the integration and restart Home Assistant.
+3. Go to **Settings → Devices & services → Add integration → Brivo Mobile Pass**.
 
 ### Manual installation
 
@@ -29,14 +26,23 @@ Copy `custom_components/brivo_mobile_pass` into Home Assistant's `custom_compone
 
 ## Set up
 
-Setup needs two types of credentials:
+### New invitation
 
-1. **Brivo app credentials:** the OAuth client ID and client secret used by the Mobile Pass application. These identify the app and do not grant access to your gates or doors on their own.
-2. **Your pass authorization:** either an existing Mobile Pass refresh token, or an unused invitation code and the email address it was sent to. This authorizes access through your pass.
+Select **New invitation**, then enter the email address that received the invitation and its unused invitation code. The integration supplies the app credentials automatically.
 
-The app credentials must match the application that issued your refresh token. You do not need to register an OAuth application for this integration. Use the [APK extraction helper](docs/APP_CREDENTIALS.md) to find the app credentials in a downloaded APK.
+Submitting the form activates the pass and consumes the invitation. An invitation already used in the mobile app cannot be used again; request a new invitation from your property administrator, or use an existing refresh token instead.
 
-Enter both types in the setup form. Invitation codes can only be used once. If setup fails after activation, submit the same details to continue with the saved credentials.
+If setup fails after activation, submit the same details to resume using the saved tokens. If activation was attempted but no tokens were saved, setup will not risk redeeming the invitation again.
+
+### Existing pass
+
+Select **Existing refresh token** and enter its refresh token. Tokens must belong to the bundled US Mobile Pass client. If setup reports a different client, use **Advanced** to supply the matching client ID and secret manually.
+
+Advanced setup also supports invitations with manually supplied app credentials. It does not change the integration's US API endpoints or add support for other regions. Do not paste personal tokens into online decoders or issue reports.
+
+### Upgrading
+
+Existing installations keep their saved app credentials and tokens; no setup changes are required. Reauthentication uses the app credentials already saved for that pass unless you explicitly choose manual credentials.
 
 Home Assistant saves the credentials and refreshes access tokens automatically. Protect your Home Assistant configuration and backups, which contain these credentials.
 
@@ -64,6 +70,14 @@ To check the connection without opening a gate, run `brivo_mobile_pass.check_con
 - **Connection failure:** Check your internet connection. Before retrying, check whether the gate opened; Brivo may have received the first request.
 - **Missing gate or door:** Reauthenticate to discover changes to your pass's access points.
 - **Credentials could not be saved:** Check Home Assistant's disk space and storage permissions.
+- **Different app client:** Use advanced setup with the credentials that issued your refresh token. The bundled profile is pinned to Mobile Pass 4.33.2 US production; Brivo may change or revoke it.
+- **Missing icon in HACS:** Older HACS frontends do not display bundled integration icons. The icon is included in this integration; the upstream fix is in Home Assistant's 2026.11 Marketplace.
+
+## Security
+
+Shared app credentials identify the mobile application; they do not grant door access on their own. Your invitation, tokens, and pass credential remain private and are stored by Home Assistant. No APK or credential-hosting service is used during setup.
+
+This is an unofficial integration, not affiliated with or endorsed by Brivo.
 
 ## Contributing
 

@@ -4,34 +4,60 @@
     "step": {
       "user": {
         "title": "Connect Brivo Mobile Pass",
+        "description": "New setups use the bundled US Mobile Pass app profile. Existing passes issued to another app client require Advanced setup. Reauthentication keeps your saved app credentials.",
         "menu_options": {
-          "token": "Existing pass",
-          "invitation": "New invitation"
-        }
-      },
-      "token": {
-        "title": "Existing Mobile Pass",
-        "description": "Enter the credentials for Brivo's Mobile Pass app and your pass's refresh token. The app credentials must match the application that issued the token.",
-        "data": {
-          "client_id": "Brivo app client ID",
-          "client_secret": "Brivo app client secret",
-          "refresh_token": "Refresh token"
+          "invitation": "New invitation (recommended)",
+          "token": "Existing refresh token",
+          "advanced": "Advanced: manual app credentials"
         }
       },
       "invitation": {
         "title": "New Mobile Pass invitation",
-        "description": "Enter the credentials for Brivo's Mobile Pass app, followed by your invitation email and code. Submitting this form activates the pass and uses the invitation.",
+        "description": "Enter the email and code from a new, unused invitation. Submitting activates the pass and consumes the invitation; do not first redeem it in the mobile app. New setups use the bundled US app profile. Reauthentication uses your saved app credentials. If setup fails after activation, submit the same details to recover saved tokens without redeeming again.",
+        "data": {
+          "email": "Invitation email",
+          "invitation_code": "Invitation code"
+        }
+      },
+      "token": {
+        "title": "Existing Mobile Pass",
+        "description": "Enter a refresh token issued to the bundled US app profile. Reauthentication uses your saved app credentials instead. For an existing token from another app client, return to the setup menu and choose Advanced to enter its matching client ID and secret.",
+        "data": {
+          "refresh_token": "Refresh token"
+        }
+      },
+      "advanced": {
+        "title": "Manual app credentials",
+        "description": "For an existing token issued to a different app client, provide the matching OAuth client ID and secret. These are app credentials, not your Brivo username and password. This integration uses US endpoints only.",
+        "menu_options": {
+          "manual_invitation": "New invitation with manual app credentials",
+          "manual_token": "Existing token with manual app credentials"
+        }
+      },
+      "manual_invitation": {
+        "title": "New invitation: manual app credentials",
+        "description": "Enter your app client ID and secret, then a new, unused invitation email and code. Submitting activates the pass and consumes the invitation. After a connection failure, submit the same details to recover saved tokens. US endpoints only.",
         "data": {
           "client_id": "Brivo app client ID",
           "client_secret": "Brivo app client secret",
           "email": "Invitation email",
           "invitation_code": "Invitation code"
         }
+      },
+      "manual_token": {
+        "title": "Existing token: manual app credentials",
+        "description": "Enter the OAuth client ID and secret for the app that issued this refresh token. A token cannot be moved to an unrelated app client. US endpoints only.",
+        "data": {
+          "client_id": "Brivo app client ID",
+          "client_secret": "Brivo app client secret",
+          "refresh_token": "Refresh token"
+        }
       }
     },
     "error": {
-      "invalid_auth": "Brivo rejected the credentials. Check your client ID, client secret, and token or invitation.",
-      "cannot_connect": "Setup could not finish. Check your connection, then submit the same details to try again."
+      "invalid_auth": "Brivo rejected the token or invitation. Check the details; invitations must be unused. For a token issued to a different app client, use Advanced with its matching client ID and secret.",
+      "cannot_connect": "Setup could not finish. Check your connection, then submit the same details to recover any saved tokens and try again.",
+      "unsupported_client": "This token identifies a different app client than the bundled profile or this entry’s saved application. No request was sent to Brivo. Return to the setup menu and choose Advanced, then enter the client ID and secret that issued the token."
     },
     "abort": {
       "already_configured": "This Mobile Pass is already configured.",
