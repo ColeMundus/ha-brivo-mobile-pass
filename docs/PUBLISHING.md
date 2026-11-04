@@ -16,3 +16,27 @@ gh release create v0.2.0 --target <verified-commit> --title '0.2.0' --notes-file
 ```
 
 Do not replace saved app credentials in existing config entries when updating the bundled profile. Refresh tokens remain bound to the client that issued them.
+
+## Dependency maintenance
+
+Dependabot checks GitHub Actions monthly. The auto-merge workflow verifies that
+updates contain only signed Dependabot commits and come from this repository.
+Before fetching metadata, it paginates every PR commit and requires the
+`dependabot[bot]` author login and ID (`49699333`) plus a valid, verified signature
+on each commit. It checks the current PR head before and after enumeration against
+the event head, requires the final commit to match that head, and checks the full
+commit count. Incomplete results and PRs over the API's 250-commit limit fail closed
+and need manual review. The merge command also requires the same event head.
+It enables squash auto-merge for patch/minor updates to `actions/checkout`,
+`astral-sh/setup-uv`, and `dependabot/fetch-metadata`, plus SHA updates to the
+tracked `home-assistant/actions/hassfest` and `hacs/action` branches. Major
+versions, prereleases, unknown dependencies, and maintainer-change notices need
+manual review. The privileged workflow never checks out pull request code.
+
+Repository settings must keep auto-merge enabled and protect `main` with the
+GitHub Actions `tests`, `hassfest`, and `hacs` checks required before merging.
+Auto-merge does not bypass these checks. Keep branches up to date before merging;
+Dependabot can rebase its PRs, or a maintainer can use `gh pr update-branch`.
+Adding a label to an existing Dependabot PR reruns eligibility checks without
+bypassing this policy. No personal access token or automatic review approval is
+needed.
