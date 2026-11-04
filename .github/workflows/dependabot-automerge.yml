@@ -1,0 +1,122 @@
+name: Dependabot auto-merge
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review, labeled]
+permissions: {}
+jobs:
+  automerge:
+    if: >-
+      github.repository == 'ColeMundus/ha-brivo-mobile-pass' &&
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'main' &&
+      !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      # Never check out or execute PR code in this privileged workflow.
+      - name: Verify every Dependabot commit at the event head
+        id: verify_commits
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import subprocess
+
+          expected_head = os.environ["HEAD_SHA"]
+          endpoint = f"repos/{os.environ['GH_REPO']}/pulls/{os.environ['PR_NUMBER']}"
+
+          def api(*arguments):
+              return json.loads(subprocess.check_output(["gh", "api", *arguments], text=True))
+
+          before = api(endpoint)
+          if before.get("head", {}).get("sha") != expected_head:
+              raise SystemExit("PR head does not match event head before enumeration")
+          pages = api("--paginate", "--slurp", f"{endpoint}/commits?per_page=100")
+          commits = [commit for page in pages for commit in page]
+          after = api(endpoint)
+          if after.get("head", {}).get("sha") != expected_head:
+              raise SystemExit("PR head does not match event head after enumeration")
+          # GitHub's pull-request commits endpoint returns at most 250 commits.
+          count = before.get("commits")
+          if (
+              type(count) is not int
+              or not 1 <= count <= 250
+              or type(after.get("commits")) is not int
+              or count != after["commits"]
+              or len(commits) != count
+          ):
+              raise SystemExit("Incomplete PR commit enumeration")
+          if commits[-1].get("sha") != expected_head:
+              raise SystemExit("Last commit does not match event head")
+          for commit in commits:
+              author = commit.get("author") or {}
+              verification = commit.get("commit", {}).get("verification", {})
+              if (
+                  author.get("login") != "dependabot[bot]"
+                  or author.get("id") != 49699333
+                  or verification.get("verified") is not True
+                  or verification.get("reason") != "valid"
+              ):
+                  raise SystemExit("Untrusted commit: require signed Dependabot author")
+          PY
+      - name: Read Dependabot update metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+      - name: Select routine GitHub Actions updates
+        id: policy
+        env:
+          DEPENDENCIES: ${{ steps.metadata.outputs.updated-dependencies-json }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+
+          versioned = {"actions/checkout", "astral-sh/setup-uv", "dependabot/fetch-metadata"}
+          tracked = {"home-assistant/actions/hassfest", "hacs/action"}
+
+          def eligible(dependency):
+              if dependency.get("packageEcosystem") != "github_actions":
+                  return False
+              if dependency.get("maintainerChanges"):
+                  return False
+              name = dependency.get("dependencyName")
+              new = dependency.get("newVersion", "")
+              if name in tracked:
+                  return re.fullmatch(r"[0-9a-f]{40}", new) is not None
+              if name not in versioned:
+                  return False
+              if dependency.get("updateType") not in {
+                  "version-update:semver-patch", "version-update:semver-minor"
+              }:
+                  return False
+              old = re.fullmatch(r"v?(\d+)\.(\d+)\.(\d+)", dependency.get("prevVersion", ""))
+              new = re.fullmatch(r"v?(\d+)\.(\d+)\.(\d+)", new)
+              if not old or not new:
+                  return False
+              old_version = tuple(map(int, old.groups()))
+              new_version = tuple(map(int, new.groups()))
+              return old_version[0] == new_version[0] and old_version < new_version
+
+          dependencies = json.loads(os.environ["DEPENDENCIES"])
+          allowed = bool(dependencies) and all(eligible(item) for item in dependencies)
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write(f"eligible={str(allowed).lower()}\n")
+          PY
+      - name: Enable squash auto-merge after required validation
+        if: steps.policy.outputs.eligible == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        # main must require tests, hassfest, and hacs; never use --admin.
+        run: gh pr merge --auto --squash --match-head-commit "$HEAD_SHA" "$PR_URL"
