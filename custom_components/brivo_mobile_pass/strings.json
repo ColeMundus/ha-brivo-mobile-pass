@@ -74,6 +74,16 @@
     }
   },
   "services": {
+    "refresh_access_points": {
+      "name": "Refresh access points",
+      "description": "Discover authorized access points and update buttons without opening a gate or door.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Integration",
+          "description": "Choose a pass if you have more than one."
+        }
+      }
+    },
     "check_connection": {
       "name": "Check connection",
       "description": "Check that Brivo accepts your credentials without opening a gate or door.",

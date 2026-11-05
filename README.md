@@ -63,15 +63,26 @@ Buttons send commands; they do not report whether a gate is physically open or c
 
 To check the connection without opening a gate, run `brivo_mobile_pass.check_connection`. If you have multiple passes, select the integration in the action's **Integration** field.
 
+To discover newly added, renamed, or removed access points, run
+`brivo_mobile_pass.refresh_access_points`. This uses your saved pass without
+redeeming another invitation or opening a gate. Select **Integration** if you have
+multiple passes. Existing buttons retain their identities and customizations;
+removed access points become unavailable. Discovery runs only when requested.
+
 ## Troubleshooting
 
 - **Expired or revoked pass:** Follow Home Assistant's reauthentication prompt with a valid refresh token or new invitation.
 - **HTTP 403:** Check that your pass allows remote activation. Brivo may require proximity or other checks for that access point.
 - **Connection failure:** Check your internet connection. Before retrying, check whether the gate opened; Brivo may have received the first request.
-- **Missing gate or door:** Reauthenticate to discover changes to your pass's access points.
+- **Missing gate or door:** Run `brivo_mobile_pass.refresh_access_points`. If access was revoked, the corresponding button becomes unavailable; refreshing does not grant new permissions.
 - **Credentials could not be saved:** Check Home Assistant's disk space and storage permissions.
 - **Different app client:** Use advanced setup with the credentials that issued your refresh token. The bundled profile is pinned to Mobile Pass 4.33.2 US production; Brivo may change or revoke it.
 - **Missing icon in HACS:** Older HACS frontends do not display bundled integration icons. The icon is included in this integration; the upstream fix is in Home Assistant's 2026.11 Marketplace.
+
+Download diagnostics from the integration's menu for the loaded state, access-point
+count, and recent request health. Health information is kept in memory and resets
+when the integration reloads or Home Assistant restarts. Diagnostics do not include
+tokens, app secrets, access-point IDs or names, locations, or raw provider errors.
 
 ## Security
 
@@ -81,4 +92,4 @@ This is an unofficial integration, not affiliated with or endorsed by Brivo.
 
 ## Contributing
 
-See [development and API details](docs/ARCHITECTURE.md) and [release instructions](docs/PUBLISHING.md). Report bugs through [GitHub Issues](https://github.com/ColeMundus/ha-brivo-mobile-pass/issues). Keep credentials out of reports; see [SECURITY.md](SECURITY.md).
+See [development and API details](docs/ARCHITECTURE.md), [safe live checks](docs/TESTING.md), and [release instructions](docs/PUBLISHING.md). Report bugs through [GitHub Issues](https://github.com/ColeMundus/ha-brivo-mobile-pass/issues). Keep credentials out of reports; see [SECURITY.md](SECURITY.md).

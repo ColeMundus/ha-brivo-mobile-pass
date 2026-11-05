@@ -16,6 +16,9 @@ from homeassistant.helpers.storage import Store
 from .api import BrivoAuthError, BrivoClient, BrivoError
 from .app_credentials import DEFAULT_APPLICATION
 from .const import DOMAIN, NAME, STORAGE_VERSION
+from .storage import async_save_credentials
+
+_PENDING_STAGING = f"{DOMAIN}_pending_staging"
 
 
 def secret() -> TextSelector:
@@ -85,28 +88,39 @@ class BrivoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 f"{application['client_id']}:{user_input.get('email', '')}:{user_input.get('invitation_code', user_input.get('refresh_token', ''))}".encode()
             ).hexdigest()
             key = f"{DOMAIN}.setup.{fingerprint}"
-            store = Store(self.hass, STORAGE_VERSION, key, private=True)
-            staged = await store.async_load()
+            store = Store(self.hass, STORAGE_VERSION, key, private=True, atomic_writes=True)
+            # A failed post-rotation write must survive retries/cancelled flows
+            # within this HA process; the original grant may already be spent.
+            pending = self.hass.data.setdefault(_PENDING_STAGING, {})
+            staged = pending.get(key)
+            if staged is None:
+                staged = await store.async_load()
             if staged and not staged.get("tokens", {}).get("refresh_token"):
                 return self.async_abort(reason="invitation_uncertain")
-            if staged is None:
-                staged = {
-                    "application": application,
-                    "tokens": {"refresh_token": user_input["refresh_token"]}
-                    if mode == "token"
-                    else {},
-                }
-                # Record before redemption. A crash cannot silently resend the code.
-                await store.async_save(staged)
-            elif manual:
-                # Explicit same-client secret corrections are allowed. Normal
-                # retries must retain the app paired with the saved tokens.
-                staged["application"] = application
-                await store.async_save(staged)
+            try:
+                if staged is None:
+                    staged = {
+                        "application": application,
+                        "tokens": {"refresh_token": user_input["refresh_token"]}
+                        if mode == "token"
+                        else {},
+                    }
+                    # Verify the recovery record before any one-shot grant.
+                    await async_save_credentials(store, staged)
+                elif manual or key in pending:
+                    # Same-client secret corrections preserve pending rotations.
+                    if manual:
+                        staged["application"] = application
+                    await async_save_credentials(store, staged)
+                    pending.pop(key, None)
+            except BrivoError:
+                return self._credentials_form(mode, manual, {"base": "cannot_connect"})
 
             async def persist(tokens: dict[str, Any]) -> None:
                 staged["tokens"] = tokens
-                await store.async_save(staged)
+                pending[key] = staged
+                await async_save_credentials(store, staged)
+                pending.pop(key, None)
 
             client = BrivoClient(
                 async_get_clientsession(self.hass),

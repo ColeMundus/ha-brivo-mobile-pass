@@ -6,18 +6,73 @@ on:
 permissions:
   contents: read
 jobs:
-  tests:
+  compatibility:
+    name: compatibility (${{ matrix.lane }}, Core ${{ matrix.core }})
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - lane: minimum
+            group: dev
+            core: "2026.10.0"
+            harness: pytest-homeassistant-custom-component
+            harness-version: "0.13.371"
+          - lane: latest
+            group: ci-latest
+            core: "2026.11.0"
+            harness: pytest-homeassistant
+            harness-version: "2026.11.0"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           python-version: "3.14"
-      - run: uv sync --group dev
-      - run: uv run ruff check .
-      - run: uv run ruff format --check .
-      - run: uv run pytest
+      - run: uv sync --locked --no-default-groups --group "${{ matrix.group }}"
+      - name: Verify exact Core and harness versions
+        env:
+          HA_CORE: ${{ matrix.core }}
+          HA_HARNESS: ${{ matrix.harness }}
+          HA_HARNESS_VERSION: ${{ matrix.harness-version }}
+        run: >-
+          uv run --no-sync python scripts/check_ha_test_versions.py
+          "$HA_CORE" "$HA_HARNESS" "$HA_HARNESS_VERSION"
+      - run: uv run --no-sync ruff check .
+      - run: uv run --no-sync ruff format --check .
+      - run: uv run --no-sync pytest
+  actionlint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install checksum-verified Actionlint 1.7.12
+        run: |
+          curl --fail --location --retry 3 \
+            https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz \
+            --output "$RUNNER_TEMP/actionlint.tar.gz"
+          printf '%s  %s\n' \
+            8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8 \
+            "$RUNNER_TEMP/actionlint.tar.gz" | sha256sum --check --strict
+          tar -xzf "$RUNNER_TEMP/actionlint.tar.gz" -C "$RUNNER_TEMP" actionlint
+      # Inline Python is exercised by the policy tests; don't depend on an
+      # incidental pyflakes installation. Keep Actionlint's Shellcheck enabled.
+      - name: Lint all workflows including privileged automation
+        run: '"$RUNNER_TEMP/actionlint" -color -pyflakes ""'
+  # Retain the branch-protection context; skipped/cancelled dependencies must fail closed.
+  tests:
+    if: ${{ always() }}
+    needs: [compatibility, actionlint]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require every validation dependency to succeed
+        env:
+          COMPATIBILITY_RESULT: ${{ needs.compatibility.result }}
+          ACTIONLINT_RESULT: ${{ needs.actionlint.result }}
+        run: |
+          test "$COMPATIBILITY_RESULT" = success
+          test "$ACTIONLINT_RESULT" = success
   hassfest:
     runs-on: ubuntu-latest
     steps:

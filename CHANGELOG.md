@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0
+
+- Added an on-demand access-point refresh action without reauthentication, invitation redemption, or unlock requests.
+- Preserved button identities and user customizations when access points are added, renamed, removed, or restored.
+- Added credential-free in-memory request-health diagnostics and privacy regression tests.
+- Drained active requests and persisted rotated tokens before reload so retired clients cannot overwrite replacement credentials.
+- Verified atomic credential writes against the saved file, including disk failures that Home Assistant logs without raising.
+- Added minimum/latest Home Assistant compatibility checks and Actionlint to CI.
+- Added guarded automation for routine Dependabot updates.
+
 ## 0.2.0
 
 - Bundled the US production Mobile Pass app credentials: new invitation setup only needs an email and unused invitation code.

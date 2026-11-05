@@ -1,15 +1,24 @@
 [project]
 name = "ha-brivo-mobile-pass"
-version = "0.2.0"
+version = "0.3.0"
 description = "Open Brivo Mobile Pass gates and doors from Home Assistant"
 requires-python = ">=3.14.2"
 license = "MIT"
 
 [dependency-groups]
-dev = ["pytest-homeassistant-custom-component==0.13.372", "pytest-asyncio", "ruff"]
+# Default local environment exercises the exact minimum supported Core.
+dev = ["pytest-homeassistant-custom-component==0.13.371", "pytest-asyncio", "ruff"]
+# Core 2026.11 moved its supported test harness into the Core repository.
+ci-latest = ["pytest-homeassistant==2026.11.0", "ruff"]
+
+[tool.uv]
+conflicts = [[{ group = "dev" }, { group = "ci-latest" }]]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+# The official harness must initialize Core's HTTPX alias before respx imports.
+addopts = "-p no:respx -p scripts.pytest_ha_compat"
 testpaths = ["tests"]
 pythonpath = ["."]
 
