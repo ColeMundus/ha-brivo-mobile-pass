@@ -2,11 +2,10 @@
 
 # Brivo Mobile Pass for Home Assistant
 
-[![Checks](https://github.com/ColeMundus/ha-brivo-mobile-pass/actions/workflows/validate.yml/badge.svg?branch=main)](https://github.com/ColeMundus/ha-brivo-mobile-pass/actions/workflows/validate.yml)
-[![HACS](https://img.shields.io/badge/HACS-default-41BDF5?logo=homeassistant&logoColor=white)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ColeMundus&repository=ha-brivo-mobile-pass&category=integration)
-[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2026.10%2B-41BDF5?logo=homeassistant&logoColor=white)](https://github.com/ColeMundus/ha-brivo-mobile-pass/blob/main/custom_components/brivo_mobile_pass/manifest.json)
-[![Release](https://img.shields.io/github/v/release/ColeMundus/ha-brivo-mobile-pass)](https://github.com/ColeMundus/ha-brivo-mobile-pass/releases/latest)
-[MIT license](https://github.com/ColeMundus/ha-brivo-mobile-pass/blob/main/LICENSE)
+[![CI: workflow](docs/badges/ci.svg)](https://github.com/ColeMundus/ha-brivo-mobile-pass/actions/workflows/validate.yml)
+[![HA tested: 2026.10.0 | 2026.11.0](docs/badges/compatibility.svg)](https://github.com/ColeMundus/ha-brivo-mobile-pass/actions/workflows/validate.yml)
+[![License: MIT](docs/badges/license.svg)](LICENSE)
+[![Distribution: HACS catalog](docs/badges/distribution.svg)](#hacs)
 
 Open Brivo Mobile Pass gates and doors from Home Assistant. The integration adds an **Open** button for each enabled access point on your pass.
 
