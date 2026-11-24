@@ -51,8 +51,8 @@ def test_required_tests_gate_rejects_any_unsuccessful_dependency(compatibility, 
     jobs = yaml.safe_load(WORKFLOW.read_text())["jobs"]
     gate = jobs["tests"]
     assert gate.get("name", "tests") == "tests"
-    assert set(gate["needs"]) == {"compatibility", "actionlint"}
-    assert gate["if"] == "${{ always() }}"
+    assert set(gate["needs"]) == {"scope", "compatibility", "actionlint"}
+    assert gate["if"] == "${{ always() && needs.scope.outputs.docs_only != 'true' }}"
     assert "strategy" not in gate
     assert "continue-on-error" not in gate
     assert len(gate["steps"]) == 1
