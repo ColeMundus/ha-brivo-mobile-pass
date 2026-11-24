@@ -294,7 +294,7 @@ async def test_verified_save_rejects_actual_disk_mismatch_or_read_failure(hass, 
     with (
         patch.object(store, "_async_write_data", new=corrupt),
         patch.object(Path, "open", new=checked_open),
-        pytest.raises(BrivoError, match="^Could not save Brivo credentials$") as error,
+        pytest.raises(BrivoError, match=r"^Could not save Brivo credentials$") as error,
     ):
         await async_save_credentials(store, expected)
     assert error.value.__suppress_context__
@@ -502,7 +502,7 @@ async def test_shutdown_final_write_failure_stays_private_after_helper_exits(has
     hass.set_state(CoreState.stopping)
     caplog.clear()
     try:
-        with pytest.raises(BrivoError, match="^Could not save Brivo credentials$"):
+        with pytest.raises(BrivoError, match=r"^Could not save Brivo credentials$"):
             await async_save_credentials(store, {"tokens": {"refresh_token": "new-synthetic"}})
         assert (await disk_data(hass, store))["tokens"]["refresh_token"] == "old-synthetic"
         assert store._unsub_final_write_listener is not None
