@@ -294,9 +294,9 @@ async def test_verified_save_rejects_actual_disk_mismatch_or_read_failure(hass, 
     with (
         patch.object(store, "_async_write_data", new=corrupt),
         patch.object(Path, "open", new=checked_open),
+        pytest.raises(BrivoError, match="^Could not save Brivo credentials$") as error,
     ):
-        with pytest.raises(BrivoError, match="^Could not save Brivo credentials$") as error:
-            await async_save_credentials(store, expected)
+        await async_save_credentials(store, expected)
     assert error.value.__suppress_context__
     for canary in (
         store.key,
@@ -476,9 +476,11 @@ async def test_atomic_os_failure_logs_are_sanitized_and_keep_previous_file(hass,
     store = Store(hass, 1, "synthetic-write-canary", private=True, atomic_writes=True)
     await async_save_credentials(store, {"tokens": {"refresh_token": "old-synthetic"}})
     caplog.clear()
-    with patch.object(ha_file.AtomicWriter, "sync", side_effect=OSError("private-os-canary")):
-        with pytest.raises(BrivoError) as error:
-            await async_save_credentials(store, {"tokens": {"refresh_token": "new-synthetic"}})
+    with (
+        patch.object(ha_file.AtomicWriter, "sync", side_effect=OSError("private-os-canary")),
+        pytest.raises(BrivoError) as error,
+    ):
+        await async_save_credentials(store, {"tokens": {"refresh_token": "new-synthetic"}})
     assert error.value.__suppress_context__
     assert (await disk_data(hass, store))["tokens"]["refresh_token"] == "old-synthetic"
     for canary in (store.key, store.path, "private-os-canary", "new-synthetic"):

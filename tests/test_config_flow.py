@@ -380,7 +380,7 @@ async def test_normal_invitation_uses_copied_default_application(hass):
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"]["application"] == expected
     assert result["data"]["application"] is not DEFAULT_APPLICATION
-    assert DEFAULT_APPLICATION == expected
+    assert expected == DEFAULT_APPLICATION
 
 
 @pytest.mark.parametrize("manual", [False, True])
