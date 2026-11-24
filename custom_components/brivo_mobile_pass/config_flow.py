@@ -83,7 +83,9 @@ class BrivoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if mode == "token" and not manual:
                 hint = token_client_hint(user_input["refresh_token"])
                 if hint is not None and hint != application["client_id"]:
-                    return self._credentials_form(mode, manual, {"base": "unsupported_client"})
+                    return self._credentials_form(
+                        mode, manual=manual, errors={"base": "unsupported_client"}
+                    )
             fingerprint = hashlib.sha256(
                 f"{application['client_id']}:{user_input.get('email', '')}:{user_input.get('invitation_code', user_input.get('refresh_token', ''))}".encode()
             ).hexdigest()
@@ -114,7 +116,9 @@ class BrivoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     await async_save_credentials(store, staged)
                     pending.pop(key, None)
             except BrivoError:
-                return self._credentials_form(mode, manual, {"base": "cannot_connect"})
+                return self._credentials_form(
+                    mode, manual=manual, errors={"base": "cannot_connect"}
+                )
 
             async def persist(tokens: dict[str, Any]) -> None:
                 staged["tokens"] = tokens
@@ -148,9 +152,9 @@ class BrivoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors["base"] = "invalid_auth"
             except BrivoError:
                 errors["base"] = "cannot_connect"
-        return self._credentials_form(mode, manual, errors)
+        return self._credentials_form(mode, manual=manual, errors=errors)
 
-    def _credentials_form(self, mode: str, manual: bool, errors: dict) -> dict:
+    def _credentials_form(self, mode: str, *, manual: bool, errors: dict) -> dict:
         schema = {}
         if manual:
             schema = {
