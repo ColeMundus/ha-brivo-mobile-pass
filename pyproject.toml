@@ -7,9 +7,9 @@ license = "MIT"
 
 [dependency-groups]
 # Default local environment exercises the exact minimum supported Core.
-dev = ["pytest-homeassistant-custom-component==0.13.371", "pytest-asyncio", "ruff"]
+dev = ["pytest-homeassistant-custom-component==0.13.371", "pytest-asyncio", "ruff", "pytest-randomly>=5.1.0,<6"]
 # Core 2026.11 moved its supported test harness into the Core repository.
-ci-latest = ["pytest-homeassistant==2026.11.0", "ruff"]
+ci-latest = ["pytest-homeassistant==2026.11.0", "ruff", "pytest-randomly>=5.1.0,<6"]
 
 [tool.uv]
 conflicts = [[{ group = "dev" }, { group = "ci-latest" }]]
