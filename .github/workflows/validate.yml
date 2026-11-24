@@ -54,7 +54,7 @@ jobs:
     if: needs.scope.outputs.docs_only == 'true'
     needs: scope
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 2
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -80,7 +80,7 @@ jobs:
     needs: scope
     name: compatibility (${{ matrix.lane }}, Core ${{ matrix.core }})
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 3
     strategy:
       fail-fast: false
       matrix:
@@ -126,7 +126,7 @@ jobs:
     if: ${{ !cancelled() && needs.scope.outputs.docs_only != 'true' }}
     needs: scope
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 2
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install checksum-verified Actionlint 1.7.12
@@ -148,7 +148,7 @@ jobs:
     if: ${{ always() && needs.scope.outputs.docs_only != 'true' }}
     needs: [scope, compatibility, actionlint]
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 3
     steps:
       - name: Require every validation dependency to succeed
         env:
@@ -161,6 +161,7 @@ jobs:
     if: ${{ !cancelled() && needs.scope.outputs.docs_only != 'true' }}
     needs: scope
     runs-on: ubuntu-latest
+    timeout-minutes: 3
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: home-assistant/actions/hassfest@86d4564712fa02543c808e3a693dd04f9d3f8361 # master
@@ -168,6 +169,7 @@ jobs:
     if: ${{ !cancelled() && needs.scope.outputs.docs_only != 'true' }}
     needs: scope
     runs-on: ubuntu-latest
+    timeout-minutes: 3
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: hacs/action@1ebf01c408f29afcb6406bd431bc98fd8cbb15aa # main
