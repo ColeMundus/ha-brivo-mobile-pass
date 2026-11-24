@@ -4,6 +4,7 @@ on:
     branches: [main]
     tags: ['**']
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
   schedule:
     - cron: '41 9 * * 1'
@@ -13,7 +14,63 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
+  scope:
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      docs_only: ${{ steps.diff.outputs.docs_only }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - name: Identify Markdown-only changes
+        id: diff
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          python3 - <<'PYTHON'
+          import os
+          import subprocess
+
+          known = {b"README.md", b"CONTRIBUTING.md", b"SECURITY.md", b"CHANGELOG.md"}
+          diff = subprocess.run(
+              ["git", "diff", "--name-only", "-z", "--no-renames", os.environ["BASE_SHA"], "HEAD", "--"],
+              stdout=subprocess.PIPE,
+              check=False,
+          )
+          paths = diff.stdout.split(b"\0")[:-1]
+          docs_only = diff.returncode == 0 and bool(paths) and all(
+              path in known or (path.startswith(b"docs/") and path.endswith(b".md"))
+              for path in paths
+          )
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              print(f"docs_only={str(docs_only).lower()}", file=output)
+          print("Markdown-only draft" if docs_only else "Full validation required")
+          PYTHON
+
+  draft-lint:
+    if: needs.scope.outputs.docs_only == 'true'
+    needs: scope
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          python-version: '3.14'
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+          cache-suffix: draft-lint
+      - run: uv sync --locked --no-default-groups --group dev
+      - run: uv run --no-sync ruff check .
+      - run: uv run --no-sync ruff format --check .
   compatibility:
+    if: ${{ !cancelled() && needs.scope.outputs.docs_only != 'true' }}
+    needs: scope
     name: compatibility (${{ matrix.lane }}, Core ${{ matrix.core }})
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -52,6 +109,8 @@ jobs:
       - run: uv run --no-sync ruff format --check .
       - run: uv run --no-sync pytest
   actionlint:
+    if: ${{ !cancelled() && needs.scope.outputs.docs_only != 'true' }}
+    needs: scope
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -71,8 +130,9 @@ jobs:
         run: '"$RUNNER_TEMP/actionlint" -color -pyflakes ""'
   # Retain the branch-protection context; skipped/cancelled dependencies must fail closed.
   tests:
-    if: ${{ always() }}
-    needs: [compatibility, actionlint]
+    name: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft && 'Draft validation' || 'tests' }}
+    if: ${{ always() && needs.scope.outputs.docs_only != 'true' }}
+    needs: [scope, compatibility, actionlint]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -84,11 +144,15 @@ jobs:
           test "$COMPATIBILITY_RESULT" = success
           test "$ACTIONLINT_RESULT" = success
   hassfest:
+    if: ${{ !cancelled() && needs.scope.outputs.docs_only != 'true' }}
+    needs: scope
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: home-assistant/actions/hassfest@86d4564712fa02543c808e3a693dd04f9d3f8361 # master
   hacs:
+    if: ${{ !cancelled() && needs.scope.outputs.docs_only != 'true' }}
+    needs: scope
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

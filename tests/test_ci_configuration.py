@@ -50,9 +50,10 @@ def test_ci_covers_exact_minimum_and_latest_core_with_matching_harnesses():
 def test_required_tests_gate_rejects_any_unsuccessful_dependency(compatibility, actionlint):
     jobs = yaml.safe_load(WORKFLOW.read_text())["jobs"]
     gate = jobs["tests"]
-    assert gate.get("name", "tests") == "tests"
-    assert set(gate["needs"]) == {"compatibility", "actionlint"}
-    assert gate["if"] == "${{ always() }}"
+    assert "github.event.pull_request.draft" in gate["name"]
+    assert "'Draft validation' || 'tests'" in gate["name"]
+    assert set(gate["needs"]) == {"scope", "compatibility", "actionlint"}
+    assert gate["if"] == "${{ always() && needs.scope.outputs.docs_only != 'true' }}"
     assert "strategy" not in gate
     assert "continue-on-error" not in gate
     assert len(gate["steps"]) == 1
