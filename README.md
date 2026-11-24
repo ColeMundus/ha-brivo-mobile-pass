@@ -92,3 +92,5 @@ This is an unofficial integration, not affiliated with or endorsed by Brivo.
 ## Contributing
 
 See [development and API details](docs/ARCHITECTURE.md), [safe live checks](docs/TESTING.md), and [release instructions](docs/PUBLISHING.md). Report bugs through [GitHub Issues](https://github.com/ColeMundus/ha-brivo-mobile-pass/issues). Keep credentials out of reports; see [SECURITY.md](SECURITY.md).
+
+<!-- Temporary CI measurement full-06. This PR will be closed unmerged. -->
