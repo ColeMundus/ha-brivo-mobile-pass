@@ -96,3 +96,48 @@ jobs:
         with:
           category: integration
           comment: false
+
+  hacs-cache-candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      HACS_IMAGE: ghcr.io/hacs/action@sha256:35241cb9a8ce6a83f3fbe893880283419c59bea26e71d4c99e279856518bde25
+      HACS_CONFIG: sha256:34938eab6f3d8de3ab3c2a2b98d3c828f7f41ff6a28756ac672f3aec83aff45c
+      HACS_TAG: hacs-ci:35241cb9a8ce6a83f3fbe893880283419c59bea26e71d4c99e279856518bde25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Restore pinned HACS image archive
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: ${{ runner.temp }}/hacs-action.tar
+          key: hacs-image-${{ runner.os }}-${{ runner.arch }}-${{ env.HACS_IMAGE }}
+      - name: Load or pull the pinned HACS image
+        shell: bash
+        run: |
+          archive="$RUNNER_TEMP/hacs-action.tar"
+          if [[ -f "$archive" ]]; then
+            docker load --input "$archive"
+          else
+            docker pull "$HACS_IMAGE"
+            docker tag "$HACS_IMAGE" "$HACS_TAG"
+            docker save "$HACS_TAG" -o "$archive"
+          fi
+          image_id=$(docker image inspect --format '{{.Id}}' "$HACS_TAG")
+          [[ "$image_id" == "$HACS_CONFIG" || "$image_id" == "${HACS_IMAGE#*@}" ]]
+      - name: Validate HACS repository
+        env:
+          INPUT_GITHUB_TOKEN: ${{ github.token }}
+          INPUT_CATEGORY: integration
+          INPUT_COMMENT: 'false'
+        run: |
+          docker run --rm --pull=never \
+            -v "$GITHUB_WORKSPACE:/github/workspace" \
+            -v "$GITHUB_EVENT_PATH:/github/workflow/event.json:ro" \
+            -w /github/workspace \
+            -e GITHUB_WORKSPACE=/github/workspace \
+            -e GITHUB_EVENT_PATH=/github/workflow/event.json \
+            -e GITHUB_REPOSITORY -e GITHUB_ACTOR \
+            -e INPUT_GITHUB_TOKEN -e INPUT_CATEGORY -e INPUT_COMMENT \
+            "$HACS_TAG"
